@@ -17,7 +17,7 @@ func main() {
 	cfg := config.LoadConfig()
 
 	// 2. Prometheus 메트릭 등록
-	metrics.RegisterMetrics() // 이제 BitcoinRPCUp, BitcoinRPCLatency, BitcoinRPCErrors, ExternalBlockHeight 모두 등록됨
+	metrics.RegisterMetrics() 
 
 	// 3. 주기적으로 관측
 	go func() {

@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"blockchain-gitops/observer/internal/chain"
-	"blockchain-gitops/observer/internal/config"
-	"blockchain-gitops/observer/internal/metrics"
+	"observer/internal/chain"
+	"observer/internal/config"
+	"observer/internal/metrics"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -37,7 +37,7 @@ func main() {
 			// 추후 ticker로 변경 고려 
 			time.Sleep(time.Duration(cfg.IntervalSec) * time.Second) 
 		}	
-	}
+	}()
 
 	// 4. Prometheus가 긁어갈 endpoint 제공
 	http.Handle("/metrics", promhttp.Handler())

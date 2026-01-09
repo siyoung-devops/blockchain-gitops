@@ -1,16 +1,16 @@
 package chain
 
-TIMEOUT = 5
-
 import (
 	"encoding/json"
 	"log"
 	"time"
 	"net/http"
 	"bytes"
-
-	"blockchain-gitops/observer/internal/metrics"
+	
+	"observer/internal/metrics"
 )
+
+const TIMEOUT = 5
 
 func CheckBitcoinRPC(rpcURL, rpcUser, rpcPassword string) {
 	start := time.Now()

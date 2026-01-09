@@ -1,11 +1,11 @@
 package config
 
-DEFAULT_INTERVAL_SEC = 10
-
 import (
 	"log"
 	"os"
 )
+
+const DEFAULT_INTERVAL_SEC = 10
 
 type Config struct {
 	BitcoinRPCURL 		string // 비트코인 RPC 주소

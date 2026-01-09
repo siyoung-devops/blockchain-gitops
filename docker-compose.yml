@@ -1,0 +1,45 @@
+services:
+  bitcoind:
+    image: ruimarinho/bitcoin-core:24.0.1
+    container_name: bitcoind
+    command:
+      -printtoconsole
+      -server
+      -rpcbind=0.0.0.0
+      -rpcallowip=0.0.0.0/0
+      -rpcuser=bitcoin
+      -rpcpassword=bitcoinpw
+      -txindex
+      -regtest
+      -rpcport=8332 
+    ports:
+      - "8332:8332"
+    volumes:
+      - bitcoin-data:/bitcoin
+
+  observer:
+    build: ./observer
+    container_name: observer
+    depends_on:
+      - bitcoind
+    environment:
+      BITCOIN_RPC_URL: "http://bitcoind:8332"
+      BITCOIN_RPC_USER: "bitcoin"
+      BITCOIN_RPC_PASSWORD: "bitcoinpw"
+      INTERVAL_SEC: "10"
+      METRICS_ADDR: ":9100"
+    ports:
+      - "9100:9100"
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: prometheus
+    depends_on:
+      - observer
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+volumes:
+  bitcoin-data:

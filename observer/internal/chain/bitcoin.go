@@ -75,4 +75,7 @@ func CheckExternalBitcoinAPI() {
 		return 
 	}
 	log.Println("External API Bitcoin block height: ", height)
+
+	// Prometheus metric에 값 기록 ! 
+	metrics.ExternalBlockHeight.Set(float64(height))
 }

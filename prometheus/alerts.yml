@@ -1,0 +1,26 @@
+groups:
+  - name: bitcoin-rpc-health
+    rules:
+    - alert: BitcoinRPCDown
+      expr: blockchain_bitcoin_rpc_up == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Bitcoin RPC is DOWN"
+        description: "Bitcoin RPC endpoint has been unreachable for more than 1 minute."
+
+  - name: bitcoin-rpc-latency
+    rules:
+    - alert: BitcoinRPCLatencyHigh
+      expr: |
+        histogram_quantile(
+          0.95,
+          rate(blockchain_bitcoin_rpc_latency_seconds[5m])
+        ) > 1
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: Bitcoin RPC latency is high
+        description: 95th percentile latency has been over 1s for more than 1 minute.

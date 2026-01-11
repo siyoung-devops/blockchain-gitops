@@ -5,7 +5,8 @@ import (
 )
 
 // ============================
-// Prometheus Metrics 정의
+// Prometheus Metrics 
+// Health check 및 상태 모니터링용 메트릭
 // ============================
 
 // 비트코인 살아있는지 체크 (1 = 정상, 0 = 장애)
@@ -48,6 +49,7 @@ var BitcoinRPCErrors = prometheus.NewCounter(
 		Help:      "Total number of Bitcoin RPC errors",
 	},
 )
+
 
 // ============================
 // Metrics 등록 함수

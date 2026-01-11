@@ -38,8 +38,25 @@ services:
       - observer
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml
     ports:
       - "9090:9090"
 
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    container_name: alertmanager
+    volumes:
+      - ./manager/alertmanager.yml:/etc/manager/alertmanager.yml
+    ports:
+      - "9093:9093"
+      
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      
 volumes:
   bitcoin-data:

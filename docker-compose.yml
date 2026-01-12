@@ -4,7 +4,7 @@ services:
 # ======================
   observer:
     build: ./observer # 이미지 = 코드 스냅샷. 코드 변경시 재빌드 필요
-    image: blockchain-gitops-observer:latest
+    image: blockchain-gitops-observer:0.1.0
     container_name: observer
     depends_on:
       - bitcoind

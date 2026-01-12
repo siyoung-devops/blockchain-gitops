@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: observer
+  labels:
+    app: observer
+spec:
+  replicas: 3  # pod 하나 죽이고 재생성되는지 확인하기 위해 3개로 설정
+  selector:
+    matchLabels:
+      app: observer
+  template:   # observer pod 템플릿
+    metadata:
+      labels:
+        app: observer
+    spec:
+      containers:
+        - name: observer
+          image: blockchain-gitops-observer:0.1.0
+          imagePullPolicy: IfNotPresent # 로컬 이미지 사용
+          ports:
+            - containerPort: 9100
+          env:
+            - name: BITCOIN_RPC_URL
+              value: "http://bitcoind:8332"
+            - name: BITCOIN_RPC_USER
+              value: "bitcoin"
+            - name: BITCOIN_RPC_PASSWORD
+              value: "bitcoinpw"
+            - name: INTERVAL_SEC
+              value: "10"

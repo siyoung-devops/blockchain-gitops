@@ -1,4 +1,25 @@
 services:
+# ======================
+# 커스텀 빌드 이미지
+# ======================
+  observer:
+    build: ./observer # 이미지 = 코드 스냅샷. 코드 변경시 재빌드 필요
+    image: blockchain-gitops-observer:latest
+    container_name: observer
+    depends_on:
+      - bitcoind
+    environment:
+      BITCOIN_RPC_URL: "http://bitcoind:8332"
+      BITCOIN_RPC_USER: "bitcoin"
+      BITCOIN_RPC_PASSWORD: "bitcoinpw"
+      INTERVAL_SEC: "10"
+      METRICS_ADDR: ":9100"
+    ports:
+      - "9100:9100"
+
+  # ======================
+  # 공식 이미지 사용
+  # ======================    
   bitcoind:
     image: ruimarinho/bitcoin-core:24.0.1
     container_name: bitcoind
@@ -16,20 +37,6 @@ services:
       - "8332:8332"
     volumes:
       - bitcoin-data:/bitcoin
-
-  observer:
-    build: ./observer
-    container_name: observer
-    depends_on:
-      - bitcoind
-    environment:
-      BITCOIN_RPC_URL: "http://bitcoind:8332"
-      BITCOIN_RPC_USER: "bitcoin"
-      BITCOIN_RPC_PASSWORD: "bitcoinpw"
-      INTERVAL_SEC: "10"
-      METRICS_ADDR: ":9100"
-    ports:
-      - "9100:9100"
 
   prometheus:
     image: prom/prometheus:v2.52.0

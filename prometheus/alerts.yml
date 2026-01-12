@@ -16,7 +16,7 @@ groups:
       expr: |
         histogram_quantile(
           0.95,
-          rate(blockchain_bitcoin_rpc_latency_seconds[5m])
+          rate(blockchain_bitcoin_rpc_latency_seconds_bucket[5m])
         ) > 1
       for: 1m
       labels:

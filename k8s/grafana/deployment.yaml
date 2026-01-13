@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grafana
+  namespace: monitoring # 모니터링 네임스페이스로 배포!
 spec:
   replicas: 1
   selector:

@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: bitcoind
+  namespace: monitoring 
 spec:
   serviceName: bitcoind
   replicas: 1

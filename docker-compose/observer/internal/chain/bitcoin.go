@@ -48,18 +48,14 @@ func CheckBitcoinRPC(rpcURL, rpcUser, rpcPassword string) {
 	}
 	defer resp.Body.Close() 
 
-	// 3. 응답 상태 코드 확인
-	if resp.StatusCode != http.StatusOK {
-		metrics.BitcoinRPCUp.Set(0)
-		metrics.BitcoinRPCErrors.Inc()
-		log.Println(" Bitcoin RPC non-200 status: ", resp.StatusCode)
-		return
-	}
-
-	// 모든 체크 통과시 정상으로 간주
 	metrics.BitcoinRPCUp.Set(1)
+	
+	// 3. (수정) -  HTTP 200이 아니면 "에러율"만 증가
+	if resp.StatusCode != http.StatusOK {
+		metrics.BitcoinRPCErrors.Inc()
+		log.Println("Bitcoin RPC returned non-200:", resp.StatusCode)
+	}
 }
-
 
 func CheckExternalBitcoinAPI() {
 	resp, err := http.Get("https://blockstream.info/api/blocks/tip/height")

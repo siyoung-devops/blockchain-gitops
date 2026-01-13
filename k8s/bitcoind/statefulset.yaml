@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: bitcoind
+spec:
+  serviceName: bitcoind
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bitcoind
+  template:
+    metadata:
+      labels:
+        app: bitcoind
+    spec:
+      containers:
+      - name: bitcoind
+        image: ruimarinho/bitcoin-core:24.0.1
+        ports:
+        - containerPort: 8332
+        command: ["bitcoind"]       # 실제 실행 파일
+        args:
+          - -server
+          - -rpcbind=0.0.0.0
+          - -rpcallowip=0.0.0.0/0
+          - -rpcuser=bitcoin
+          - -rpcpassword=bitcoinpw
+          - -txindex
+          - -regtest
+          - -rpcport=8332
+          - -printtoconsole
+        volumeMounts:
+        - name: bitcoin-data
+          mountPath: /bitcoin
+  volumeClaimTemplates:
+  - metadata:
+      name: bitcoin-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi

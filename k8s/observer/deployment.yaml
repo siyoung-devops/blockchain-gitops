@@ -5,7 +5,7 @@ metadata:
   labels:
     app: observer
 spec:
-  replicas: 3  # pod 하나 죽이고 재생성되는지 확인하기 위해 3개로 설정
+  replicas: 1  # 
   selector:
     matchLabels:
       app: observer
@@ -15,17 +15,35 @@ spec:
         app: observer
     spec:
       containers:
-        - name: observer
-          image: blockchain-gitops-observer:0.1.0
-          imagePullPolicy: IfNotPresent # 로컬 이미지 사용
-          ports:
-            - containerPort: 9100
-          env:
-            - name: BITCOIN_RPC_URL
-              value: "http://bitcoind:8332"
-            - name: BITCOIN_RPC_USER
-              value: "bitcoin"
-            - name: BITCOIN_RPC_PASSWORD
-              value: "bitcoinpw"
-            - name: INTERVAL_SEC
-              value: "10"
+      - name: observer
+        image: blockchain-gitops-observer:0.1.2
+        env:
+        - name: BITCOIN_RPC_URL
+          valueFrom:
+            configMapKeyRef:
+              name: observer-config
+              key: BITCOIN_RPC_URL
+        - name: INTERVAL_SEC
+          valueFrom:
+            configMapKeyRef:
+              name: observer-config
+              key: INTERVAL_SEC
+        - name: METRICS_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: observer-config
+              key: METRICS_ADDR
+        - name: BITCOIN_RPC_USER
+          valueFrom:
+            secretKeyRef:
+              name: bitcoind-secret
+              key: rpcuser
+        - name: BITCOIN_RPC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: bitcoind-secret
+              key: rpcpassword
+        ports:
+        - containerPort: 9100
+
+

@@ -34,6 +34,6 @@ func main() {
 	// 4. Prometheus가 긁어갈 endpoint 제공
 	http.Handle("/metrics", promhttp.Handler())
 
-	log.Println("Bitcoin Observer running on", cfg.MetricsAddr)
+	log.Println("observer version 0.1.1", cfg.MetricsAddr)
 	log.Fatal(http.ListenAndServe(cfg.MetricsAddr, nil))
 }

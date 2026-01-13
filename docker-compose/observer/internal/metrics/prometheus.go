@@ -60,3 +60,4 @@ func RegisterMetrics() {
 	prometheus.MustRegister(BitcoinRPCLatency)
 	prometheus.MustRegister(BitcoinRPCErrors)
 }
+

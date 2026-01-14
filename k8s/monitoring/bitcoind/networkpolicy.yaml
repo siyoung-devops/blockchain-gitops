@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: bitcoind-rpc-only-from-observer
+  namespace: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      app: bitcoind
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: observer
+      ports:
+        - protocol: TCP
+          port: 8332

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: bitcoind
-  namespace: monitoring 
+  namespace: monitoring
 spec:
   serviceName: bitcoind
   replicas: 1
@@ -19,20 +19,21 @@ spec:
         image: ruimarinho/bitcoin-core:24.0.1
         ports:
         - containerPort: 8332
-        command: ["bitcoind"]       # 실제 실행 파일
+        command: ["bitcoind"]
         args:
-          - -server
-          - -rpcbind=0.0.0.0
-          - -rpcallowip=0.0.0.0/0
-          - -rpcuser=bitcoin
-          - -rpcpassword=bitcoinpw
-          - -txindex
+          - -conf=/etc/bitcoin/bitcoin.conf
           - -regtest
-          - -rpcport=8332
-          - -printtoconsole
+          - -datadir=/bitcoin
         volumeMounts:
         - name: bitcoin-data
           mountPath: /bitcoin
+        - name: bitcoind-config
+          mountPath: /etc/bitcoin
+          readOnly: true
+      volumes:
+      - name: bitcoind-config
+        secret:
+          secretName: bitcoind-config
   volumeClaimTemplates:
   - metadata:
       name: bitcoin-data

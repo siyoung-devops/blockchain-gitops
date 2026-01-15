@@ -1,12 +1,11 @@
 pipeline {
   agent any
   stages {
-    stage('Build') {
-      when {
-        branch 'dev'
-      }
+    stage('Smoke') {
       steps {
-        echo 'Running on dev branch'
+        echo "BRANCH_NAME=${env.BRANCH_NAME}"
+        sh 'pwd'
+        sh 'ls -la'
       }
     }
   }

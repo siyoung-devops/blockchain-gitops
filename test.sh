@@ -1,1 +1,1 @@
-type "./hello.txt"
+type "./test.txt"

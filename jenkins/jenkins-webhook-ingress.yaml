@@ -8,13 +8,12 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: jenkins.local
-      http:
-        paths:
-          - path: /github-webhook/
-            pathType: Prefix
-            backend:
-              service:
-                name: jenkins
-                port:
-                  number: 8080
+    http:
+      paths:
+        - path: /github-webhook/
+          pathType: Prefix
+          backend:
+            service:
+              name: jenkins
+              port:
+                number: 8080

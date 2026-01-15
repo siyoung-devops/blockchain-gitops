@@ -1,18 +1,12 @@
 pipeline {
-  agent any
+    agent any
 
-  stages {
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
+    stages {
+        stage('Smoke') {
+            steps {
+                echo "Branch: ${env.dev}"
+                sh 'echo Jenkins Multibranch Pipeline OK'
+            }
+        }
     }
-
-    stage('Run test.sh') {
-      steps {
-        sh 'chmod +x test.sh'
-        sh './test.sh'
-      }
-    }
-  }
 }

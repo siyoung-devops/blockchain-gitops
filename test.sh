@@ -1,1 +1,1 @@
-type "./hello.txt"
+cat "./test.txt"

@@ -1,1 +1,20 @@
-Hello, World
+testing for CI/CD by Jenkins
+
+코드 수정
+  ↓
+git push
+  ↓
+GitHub Webhook
+  ↓
+ngrok (공개 URL)
+  ↓
+Jenkins /github-webhook/
+  ↓
+Job 트리거
+  ↓
+Git clone
+  ↓
+test.sh 실행
+
+로컬 Jenkins 환경에서 ngrok을 이용해 Jenkins를 외부에 임시 공개하고,
+GitHub Webhook을 통해 코드 push 시 자동으로 빌드 스크립트가 실행되는 CI 파이프라인을 구축

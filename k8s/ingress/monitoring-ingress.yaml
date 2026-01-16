@@ -4,7 +4,7 @@ metadata:
   name: monitoring-ingress
   namespace: monitoring
   annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "false" 
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   ingressClassName: nginx
   rules:
@@ -12,13 +12,12 @@ spec:
       http:
         paths:
           - path: /
-          
             pathType: Prefix
             backend:
               service:
-                name: grafana
+                name: kps-grafana
                 port:
-                  number: 3000
+                  number: 80
 
     - host: prom.local
       http:
@@ -27,7 +26,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: prometheus
+                name: kps-kube-prometheus-stack-prometheus
                 port:
                   number: 9090
 
@@ -38,6 +37,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: alertmanager
+                name: kps-kube-prometheus-stack-alertmanager
                 port:
                   number: 9093

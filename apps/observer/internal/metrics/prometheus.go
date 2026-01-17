@@ -50,6 +50,25 @@ var BitcoinRPCErrors = prometheus.NewCounter(
 	},
 )
 
+// 비트코인 시세 - USD
+var BitcoinPriceUSD = prometheus.NewGauge(
+	prometheus.GaugeOpts{
+		Namespace: "blockchain",
+		Subsystem: "bitcoin",
+		Name:      "price_usd",
+		Help:      "Bitcoin price in USD from external provider",
+	},
+)
+
+// 비트코인 시세 - KRW
+var BitcoinPriceKRW = prometheus.NewGauge(
+	prometheus.GaugeOpts{
+		Namespace: "blockchain",
+		Subsystem: "bitcoin",
+		Name:      "price_krw",
+		Help:      "Bitcoin price in KRW from external provider",
+	},
+)
 
 // ============================
 // Metrics 등록 함수
@@ -59,5 +78,6 @@ func RegisterMetrics() {
 	prometheus.MustRegister(ExternalBlockHeight)
 	prometheus.MustRegister(BitcoinRPCLatency)
 	prometheus.MustRegister(BitcoinRPCErrors)
+	prometheus.MustRegister(BitcoinPriceUSD)
+	prometheus.MustRegister(BitcoinPriceKRW)
 }
-

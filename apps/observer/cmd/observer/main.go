@@ -19,16 +19,15 @@ func main() {
 	// 2. Prometheus 메트릭 등록
 	metrics.RegisterMetrics() 
 
-	// 3. 주기적으로 관측
-	go func() {
-		for {
-			chain.CheckBitcoinRPC(cfg.BitcoinRPCURL, cfg.BitcoinRPCUser, cfg.BitcoinRPCPassword)
-			chain.CheckExternalBitcoinAPI() // 외부 기준 API 확인
+	// 3. 주기적으로 관측 : time.Sleep대신 ticker()로 
+	ticker := time.NewTicker(time.Duration(cfg.IntervalSec) * time.Second)
+	defer ticker.Stop()
 
-			// 주기마다 한 번 상태를 수집
-			// 추후 ticker로 변경 고려 
-			time.Sleep(time.Duration(cfg.IntervalSec) * time.Second)
-		}
+	go func() {
+	for range ticker.C {
+		chain.CheckBitcoinRPC(cfg.BitcoinRPCURL, cfg.BitcoinRPCUser, cfg.BitcoinRPCPassword)
+		chain.CheckExternalBitcoinAPI()
+	}
 	}()
 
 	// 4. Prometheus가 긁어갈 endpoint 제공

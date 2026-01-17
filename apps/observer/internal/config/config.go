@@ -38,16 +38,16 @@ func LoadConfig() *Config {
 	// metrics 서버 주소
 	metricsAddr := os.Getenv("METRICS_ADDR")
 	if metricsAddr == "" {
-		metricsAddr = ":9100" // 기본 포트 9100, 추후 변경
+		metricsAddr = ":9100" 
 	}
 
 	interval := DEFAULT_INTERVAL_SEC
 
 	return &Config{
-		BitcoinRPCURL:  rpcURL,
-		BitcoinRPCUser: rpcUser,
+		BitcoinRPCURL:  	rpcURL,
+		BitcoinRPCUser: 	rpcUser,
 		BitcoinRPCPassword: rpcPassword,
-		MetricsAddr:    metricsAddr,
-		IntervalSec:    interval,
+		MetricsAddr:    	metricsAddr,
+		IntervalSec:    	interval,
 	}
 }

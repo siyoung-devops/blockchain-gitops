@@ -22,3 +22,5 @@ env/
 *.log
 *.hcl
 
+infra/terraform-k3s/terraform.tfstate
+infra/terraform-k3s/terraform.tfstate.backup

@@ -1,39 +1,33 @@
-prometheus-node-exporter:
-  hostRootFsMount:
-    enabled: false
+# values-min.yaml (t3.small 단일노드, bitcoin observer만)
+alertmanager:
+  enabled: false
 
 grafana:
-  ingress:
-    enabled: false
-  sidecar:
-    dashboards:
-      enabled: true
-      label: grafana_dashboard
-      labelValue: "1"
-      searchNamespace: ALL
-      provider:
-        allowUiUpdates: false
-    datasources:
-      enabled: true
-      defaultDatasourceEnabled: true
+  enabled: true
+  adminPassword: "admin"   # 임시
+  service:
+    type: ClusterIP
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
 
 prometheus:
-  ingress:
-    enabled: false
+  enabled: true
   prometheusSpec:
-    serviceMonitorSelector: {}
-    serviceMonitorNamespaceSelector: {}
-    podMonitorSelector: {}
-    podMonitorNamespaceSelector: {}
-    ruleSelector: {}
-    ruleNamespaceSelector: {}
-    retention: 7d
+    retention: 6h
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        memory: 1Gi
 
-alertmanager:
-  ingress:
-    enabled: false
-
-
+# 클러스터 모니터링 기본 구성 끄기
 kubeApiServer:
   enabled: false
 kubeControllerManager:
@@ -44,3 +38,30 @@ kubeProxy:
   enabled: false
 kubeEtcd:
   enabled: false
+
+coreDns:
+  enabled: false
+kubeDns:
+  enabled: false
+
+kubeStateMetrics:
+  enabled: false
+
+nodeExporter:
+  enabled: false
+
+prometheus-node-exporter:
+  enabled: false
+
+# kubelet/cadvisor 등 최소화
+kubelet:
+  enabled: false
+
+# operator는 ServiceMonitor/PrometheusRule 때문에 필요
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 200Mi
+    limits:
+      memory: 400Mi

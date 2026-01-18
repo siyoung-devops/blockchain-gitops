@@ -67,13 +67,15 @@ if [ "$ENABLE_MONITORING" = "true" ]; then
   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts >/dev/null 2>&1 || true
   helm repo update >/dev/null 2>&1 || true
 
-  cat >/tmp/kps-values.yaml <<EOF
 grafana:
   ingress:
     enabled: true
     ingressClassName: nginx
     hosts:
       - grafana.$DOMAIN_SUFFIX
+  persistence:
+    enabled: true
+    size: 2Gi
 prometheus:
   ingress:
     enabled: true
@@ -83,12 +85,17 @@ prometheus:
   prometheusSpec:
     retention: 2d
     retentionSize: "2GB"
+    resources:
+      requests:
+        memory: 400Mi
+      limits:
+        memory: 1Gi
 alertmanager:
-  ingress:
-    enabled: true
-    ingressClassName: nginx
-    hosts:
-      - alertmanager.$DOMAIN_SUFFIX
+  enabled: false
+nodeExporter:
+  enabled: true
+kubeStateMetrics:
+  enabled: true
 EOF
 
   echo "[INFO] installing kube-prometheus-stack..."

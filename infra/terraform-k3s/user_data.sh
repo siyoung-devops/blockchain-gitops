@@ -1,107 +1,106 @@
 #!/bin/bash
 set -euo pipefail
 
-LOG=/var/log/portfolio-user-data.log
-exec > >(tee -a "$LOG") 2>&1
+# --- Configuration ---
+LOG_FILE="/var/log/user-data.log"
+K3S_CONFIG_FILE="/etc/rancher/k3s/config.yaml"
 
-echo "[INFO] user-data start: $(date -Is)"
+# Redirect all output to log file
+exec > >(tee -a "$LOG_FILE") 2>&1
 
-retry() {
-  local n=0
-  local max=10
-  local delay=5
-  while true; do
-    "$@" && break
-    n=$((n+1))
-    if [ "$n" -ge "$max" ]; then
-      echo "[ERROR] failed after $max attempts: $*"
-      return 1
-    fi
-    echo "[WARN] retry $n/$max after ${delay}s: $*"
-    sleep "$delay"
-    delay=$((delay*2))
-  done
-}
+echo "[INFO] Starting user_data setup at $(date)"
 
-# ---- packages (AL2023에서 충돌 대비 allowerasing) ----
-retry dnf -y update --allowerasing
-retry dnf -y install git jq bash-completion ca-certificates --allowerasing
-if ! command -v curl >/dev/null 2>&1; then
-  retry dnf -y install curl --allowerasing
-fi
+# 0. Setup Swap (Vital for t3.micro)
+echo "[INFO] Setting up 2GB Swap..."
+fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
 
-# ---- k3s config ----
+# 1. Install System Dependencies
+echo "[INFO] Installing system dependencies..."
+dnf install -y git jq curl tar --allowerasing
+
+# 2. Install K3s (Disable Traefik to use Nginx)
+echo "[INFO] Installing K3s..."
 mkdir -p /etc/rancher/k3s
-cat >/etc/rancher/k3s/config.yaml <<'YAML'
+cat > "$K3S_CONFIG_FILE" <<YAML
 write-kubeconfig-mode: "0644"
 disable:
   - traefik
 YAML
 
-# ---- install k3s ----
-if ! command -v k3s >/dev/null 2>&1; then
-  echo "[INFO] installing k3s..."
-  retry sh -c 'curl -sfL https://get.k3s.io | sh -'
+if ! command -v k3s &> /dev/null; then
+  curl -sfL https://get.k3s.io | sh -
+else
+  echo "[INFO] K3s already installed."
 fi
 
+# Wait for K3s to be ready
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+echo "[INFO] Waiting for K3s to be ready..."
+for i in {1..30}; do
+  if kubectl get nodes &> /dev/null; then
+    echo "[INFO] Kubernetes API is ready."
+    break
+  fi
+  sleep 5
+done
 
-echo "[INFO] waiting for k3s api..."
-retry k3s kubectl version --short
-
-echo "[INFO] waiting for node Ready..."
-retry k3s kubectl wait --for=condition=Ready node --all --timeout=300s
-
-# ---- helm ----
-if ! command -v helm >/dev/null 2>&1; then
-  echo "[INFO] installing helm..."
-  retry sh -c 'curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash'
-fi
-
-# ---- Terraform이 만든 config.env 읽기 ----
-if [ -f /opt/bootstrap/config.env ]; then
-  # shellcheck disable=SC1091
-  source /opt/bootstrap/config.env
-fi
-
-APP_REPO_URL="${APP_REPO_URL:-}"
-APP_REPO_REF="${APP_REPO_REF:-main}"
-
-if [ -z "$APP_REPO_URL" ]; then
-  echo "[WARN] APP_REPO_URL empty -> k3s+helm only, exit."
-  exit 0
-fi
-
-# ---- repo clone ----
-mkdir -p /opt/app
-cd /opt/app
-
-if [ -d repo/.git ]; then
-  cd repo
-  retry git fetch --all --prune
+# 3. Install Helm
+echo "[INFO] Installing Helm..."
+if ! command -v helm &> /dev/null; then
+  curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 else
-  retry git clone "$APP_REPO_URL" repo
+  echo "[INFO] Helm already installed."
+fi
+
+# 4. Install Ingress Nginx
+echo "[INFO] Installing Ingress Nginx..."
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+
+# Install Nginx Ingress Controller
+# Using hostNetwork=true for simple single-node setup (optional, but good for direct IP access on 80/443 without LoadBalancer costs if on public subnet)
+# Or use default service type LoadBalancer (which stays Pending on bare metal/simple EC2 without AWS LB Connect, so we use NodePort or hostNetwork)
+# For this "Server" setup, we'll assume we want similar behavior to Traefik: binding port 80/443 on the host.
+helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx --create-namespace \
+  --set controller.service.type=NodePort \
+  --set controller.hostNetwork=true \
+  --set controller.service.externalTrafficPolicy=Local \
+  --wait
+
+# 5. Optional: App Repository Setup (if provided)
+APP_REPO_URL="${app_repo_url}"
+APP_REPO_REF="${app_repo_ref}"
+
+if [ -n "$APP_REPO_URL" ]; then
+  echo "[INFO] Setting up Application Repository..."
+  mkdir -p /opt/app
+  cd /opt/app
+  
+  if [ -d "repo" ]; then
+    rm -rf repo
+  fi
+  
+  git clone "$APP_REPO_URL" repo
   cd repo
+  if [ -n "$APP_REPO_REF" ]; then
+    git checkout "$APP_REPO_REF"
+  fi
+  
+  echo "[INFO] App repository cloned to /opt/app/repo"
+  
+  # Ensure bootstrap script is executable if it exists
+  if [ -f "scripts/bootstrap.sh" ]; then
+    chmod +x scripts/bootstrap.sh
+    echo "[INFO] Running application bootstrap script..."
+    # Pass necessary env vars
+    export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+    ./scripts/bootstrap.sh
+  fi
 fi
 
-git checkout "$APP_REPO_REF" || true
-
-# ---- nip.io 도메인용 public ip ----
-PUBLIC_IP="$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 || true)"
-DOMAIN_SUFFIX="local"
-if [ -n "$PUBLIC_IP" ]; then
-  DOMAIN_SUFFIX="${PUBLIC_IP}.nip.io"
-fi
-echo "[INFO] DOMAIN_SUFFIX=$DOMAIN_SUFFIX"
-
-# ✅ bootstrap.sh는 "있으면 실행", 없으면 스킵
-if [ -f scripts/bootstrap.sh ]; then
-  chmod +x scripts/bootstrap.sh || true
-  echo "[INFO] running scripts/bootstrap.sh"
-  retry env DOMAIN_SUFFIX="$DOMAIN_SUFFIX" /bin/bash scripts/bootstrap.sh
-  echo "[INFO] bootstrap.sh finished"
-else
-  echo "[WARN] scripts/bootstrap.sh not found -> skipping app install."
-fi
-
-echo "[DONE] user-data finished: $(date -Is)"
+echo "[INFO] User data setup complete at $(date)"

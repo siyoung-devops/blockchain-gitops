@@ -99,6 +99,12 @@ if [ -n "$APP_REPO_URL" ]; then
     echo "[INFO] Running application bootstrap script..."
     # Pass necessary env vars
     export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+    
+    # Fetch Public IP for nip.io domain
+    TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+    PUBLIC_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/public-ipv4)
+    export DOMAIN_SUFFIX="$${PUBLIC_IP}.nip.io"
+    
     ./scripts/bootstrap.sh
   fi
 fi

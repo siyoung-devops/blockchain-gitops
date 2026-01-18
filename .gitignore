@@ -24,3 +24,4 @@ env/
 
 infra/terraform-k3s/terraform.tfstate
 infra/terraform-k3s/terraform.tfstate.backup
+infra/terraform-k3s/.terraform.tfstate.lock.info

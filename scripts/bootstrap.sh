@@ -124,7 +124,7 @@ EOF
   helm upgrade --install kps prometheus-community/kube-prometheus-stack \
     -n monitoring \
     -f /tmp/kps-values.yaml \
-    --wait --timeout 10m
+    --wait --timeout 20m
 
   echo "[INFO] monitoring installed."
 fi

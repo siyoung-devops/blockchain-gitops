@@ -57,13 +57,16 @@ helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
 echo "[INFO] waiting ingress-nginx controller rollout..."
 retry kubectl -n ingress-nginx rollout status deploy/ingress-nginx-controller --timeout=300s
 
-# 2) kube-prometheus-stack
-kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+# 2) kube-prometheus-stack (Disabled by default for t3.micro Free Tier)
+ENABLE_MONITORING="${ENABLE_MONITORING:-false}"
 
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts >/dev/null 2>&1 || true
-helm repo update >/dev/null 2>&1 || true
+if [ "$ENABLE_MONITORING" = "true" ]; then
+  kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
 
-cat >/tmp/kps-values.yaml <<EOF
+  helm repo add prometheus-community https://prometheus-community.github.io/helm-charts >/dev/null 2>&1 || true
+  helm repo update >/dev/null 2>&1 || true
+
+  cat >/tmp/kps-values.yaml <<EOF
 grafana:
   ingress:
     enabled: true
@@ -84,22 +87,24 @@ alertmanager:
       - alertmanager.$DOMAIN_SUFFIX
 EOF
 
-echo "[INFO] installing kube-prometheus-stack..."
-helm upgrade --install kps prometheus-community/kube-prometheus-stack \
-  -n monitoring \
-  -f /tmp/kps-values.yaml
+  echo "[INFO] installing kube-prometheus-stack..."
+  helm upgrade --install kps prometheus-community/kube-prometheus-stack \
+    -n monitoring \
+    -f /tmp/kps-values.yaml
 
-echo "[INFO] waiting monitoring components..."
-# grafana deployment
-retry kubectl -n monitoring rollout status deploy/kps-grafana --timeout=600s
+  echo "[INFO] waiting monitoring components..."
+  # grafana deployment
+  retry kubectl -n monitoring rollout status deploy/kps-grafana --timeout=600s
 
-# prometheus/alertmanager는 statefulset
-# 차트 버전별 이름이 바뀔 수 있어서, 존재하면 기다리고 없으면 넘어감
-if kubectl -n monitoring get sts kps-kube-prometheus-stack-prometheus >/dev/null 2>&1; then
-  retry kubectl -n monitoring rollout status sts/kps-kube-prometheus-stack-prometheus --timeout=600s
-fi
-if kubectl -n monitoring get sts kps-kube-prometheus-stack-alertmanager >/dev/null 2>&1; then
-  retry kubectl -n monitoring rollout status sts/kps-kube-prometheus-stack-alertmanager --timeout=600s
+  # prometheus/alertmanager는 statefulset
+  if kubectl -n monitoring get sts kps-kube-prometheus-stack-prometheus >/dev/null 2>&1; then
+    retry kubectl -n monitoring rollout status sts/kps-kube-prometheus-stack-prometheus --timeout=600s
+  fi
+  if kubectl -n monitoring get sts kps-kube-prometheus-stack-alertmanager >/dev/null 2>&1; then
+    retry kubectl -n monitoring rollout status sts/kps-kube-prometheus-stack-alertmanager --timeout=600s
+  fi
+else
+  echo "[WARN] Skipping kube-prometheus-stack (ENABLE_MONITORING!=true). t3.micro implies low resources."
 fi
 
 # 3) your apps (optional)

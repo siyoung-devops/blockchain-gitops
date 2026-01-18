@@ -57,8 +57,8 @@ helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
 echo "[INFO] waiting ingress-nginx controller rollout..."
 retry kubectl -n ingress-nginx rollout status deploy/ingress-nginx-controller --timeout=300s
 
-# 2) kube-prometheus-stack (Optimized for t3.micro)
-# Since we have Swap, we can try to run it with limits.
+# 2) kube-prometheus-stack
+# t4g.small (2GB RAM + 2GB Swap) is powerful enough to run this normally.
 ENABLE_MONITORING="true"
 
 if [ "$ENABLE_MONITORING" = "true" ]; then
@@ -67,7 +67,6 @@ if [ "$ENABLE_MONITORING" = "true" ]; then
   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts >/dev/null 2>&1 || true
   helm repo update >/dev/null 2>&1 || true
 
-  # Low resource config for t3.micro (1GB RAM + 2GB Swap)
   cat >/tmp/kps-values.yaml <<EOF
 grafana:
   ingress:
@@ -75,13 +74,6 @@ grafana:
     ingressClassName: nginx
     hosts:
       - grafana.$DOMAIN_SUFFIX
-  resources:
-    limits:
-      memory: 256Mi
-    requests:
-      cpu: 50m
-      memory: 128Mi
-
 prometheus:
   ingress:
     enabled: true
@@ -89,42 +81,21 @@ prometheus:
     hosts:
       - prometheus.$DOMAIN_SUFFIX
   prometheusSpec:
-    resources:
-      limits:
-        memory: 512Mi
-      requests:
-        cpu: 100m
-        memory: 256Mi
     retention: 2d
-    retentionSize: "1GB"
-
+    retentionSize: "2GB"
 alertmanager:
-  enabled: false # Save memory by disabling Alertmanager for now (optional)
-
-nodeExporter:
-  enabled: true
-  resources:
-    limits:
-      memory: 64Mi
-    requests:
-      cpu: 10m
-      memory: 32Mi
-
-kubeStateMetrics:
-  enabled: true
-  resources:
-    limits:
-      memory: 128Mi
-    requests:
-      cpu: 10m
-      memory: 64Mi
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - alertmanager.$DOMAIN_SUFFIX
 EOF
 
-  echo "[INFO] installing kube-prometheus-stack (low-resource mode)..."
+  echo "[INFO] installing kube-prometheus-stack..."
   helm upgrade --install kps prometheus-community/kube-prometheus-stack \
     -n monitoring \
     -f /tmp/kps-values.yaml \
-    --wait --timeout 20m
+    --wait --timeout 15m
 
   echo "[INFO] monitoring installed."
 fi

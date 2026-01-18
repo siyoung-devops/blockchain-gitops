@@ -1,6 +1,6 @@
 aws_region    = "ap-northeast-2"
 name_prefix   = "portfolio"
-instance_type = "t4g.small"
+instance_type = "t3.small"
 
 # 프리티어/과금 안정: 최소 30 유지
 root_volume_size = 30

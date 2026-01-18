@@ -57,8 +57,9 @@ helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
 echo "[INFO] waiting ingress-nginx controller rollout..."
 retry kubectl -n ingress-nginx rollout status deploy/ingress-nginx-controller --timeout=300s
 
-# 2) kube-prometheus-stack (Disabled by default for t3.micro Free Tier)
-ENABLE_MONITORING="${ENABLE_MONITORING:-false}"
+# 2) kube-prometheus-stack (Optimized for t3.micro)
+# Since we have Swap, we can try to run it with limits.
+ENABLE_MONITORING="true"
 
 if [ "$ENABLE_MONITORING" = "true" ]; then
   kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
@@ -66,6 +67,7 @@ if [ "$ENABLE_MONITORING" = "true" ]; then
   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts >/dev/null 2>&1 || true
   helm repo update >/dev/null 2>&1 || true
 
+  # Low resource config for t3.micro (1GB RAM + 2GB Swap)
   cat >/tmp/kps-values.yaml <<EOF
 grafana:
   ingress:
@@ -73,38 +75,58 @@ grafana:
     ingressClassName: nginx
     hosts:
       - grafana.$DOMAIN_SUFFIX
+  resources:
+    limits:
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
 prometheus:
   ingress:
     enabled: true
     ingressClassName: nginx
     hosts:
       - prometheus.$DOMAIN_SUFFIX
+  prometheusSpec:
+    resources:
+      limits:
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+    retention: 2d
+    retentionSize: "1GB"
+
 alertmanager:
-  ingress:
-    enabled: true
-    ingressClassName: nginx
-    hosts:
-      - alertmanager.$DOMAIN_SUFFIX
+  enabled: false # Save memory by disabling Alertmanager for now (optional)
+
+nodeExporter:
+  enabled: true
+  resources:
+    limits:
+      memory: 64Mi
+    requests:
+      cpu: 10m
+      memory: 32Mi
+
+kubeStateMetrics:
+  enabled: true
+  resources:
+    limits:
+      memory: 128Mi
+    requests:
+      cpu: 10m
+      memory: 64Mi
 EOF
 
-  echo "[INFO] installing kube-prometheus-stack..."
+  echo "[INFO] installing kube-prometheus-stack (low-resource mode)..."
   helm upgrade --install kps prometheus-community/kube-prometheus-stack \
     -n monitoring \
-    -f /tmp/kps-values.yaml
+    -f /tmp/kps-values.yaml \
+    --wait --timeout 10m
 
-  echo "[INFO] waiting monitoring components..."
-  # grafana deployment
-  retry kubectl -n monitoring rollout status deploy/kps-grafana --timeout=600s
-
-  # prometheus/alertmanager는 statefulset
-  if kubectl -n monitoring get sts kps-kube-prometheus-stack-prometheus >/dev/null 2>&1; then
-    retry kubectl -n monitoring rollout status sts/kps-kube-prometheus-stack-prometheus --timeout=600s
-  fi
-  if kubectl -n monitoring get sts kps-kube-prometheus-stack-alertmanager >/dev/null 2>&1; then
-    retry kubectl -n monitoring rollout status sts/kps-kube-prometheus-stack-alertmanager --timeout=600s
-  fi
-else
-  echo "[WARN] Skipping kube-prometheus-stack (ENABLE_MONITORING!=true). t3.micro implies low resources."
+  echo "[INFO] monitoring installed."
 fi
 
 # 3) your apps (optional)

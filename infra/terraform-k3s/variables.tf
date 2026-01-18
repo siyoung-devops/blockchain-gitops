@@ -10,38 +10,42 @@ variable "name_prefix" {
 
 variable "instance_type" {
   type    = string
-  default = "t3.micro" # Free Tier에 t3.micro가 포함되는 계정/기간이면 유리
+  default = "t3.micro"
 }
 
-variable "root_volume_gb" {
+# AL2023에서 최소 30GB 요구 케이스가 있어 30 기본값
+variable "root_volume_size" {
   type    = number
   default = 30
+  validation {
+    condition     = var.root_volume_size >= 30
+    error_message = "root_volume_size must be >= 30 (AL2023 snapshot 최소 요구 대응)."
+  }
 }
 
-# SSH 키페어 이름(없으면 null) - SSM으로 접속 가능하면 SSH 없어도 됨
+variable "allocate_eip" {
+  type    = bool
+  default = true
+}
+
+# SSM(세션 매니저) 접속 - true
+# Terraform 실행 IAM 계정에 IAM 관련 권한이 필요
+variable "enable_ssm" {
+  type    = bool
+  default = true
+}
+
+# SSH 접속용 (옵션)
 variable "key_name" {
   type    = string
   default = null
 }
 
-# 예: "1.2.3.4/32" (본인 공인IP/32). null이면 SSH 인바운드 rule 생성 안 함.
 variable "ssh_ingress_cidr" {
   type    = string
   default = null
 }
 
-# EIP는 기본 OFF 권장 (필요할 때만 ON)
-variable "allocate_eip" {
-  type    = bool
-  default = false
-}
-
-variable "attach_ecr_policy" {
-  type    = bool
-  default = false
-}
-
-# 앱 레포(bootstrap.sh가 있으면 실행, 없으면 스킵)
 variable "app_repo_url" {
   type    = string
   default = ""
@@ -56,6 +60,5 @@ variable "tags" {
   type = map(string)
   default = {
     Project = "portfolio-k3s"
-    Owner   = "unknown"
   }
 }

@@ -1,5 +1,5 @@
 locals {
-  public_ip = var.allocate_eip && length(aws_eip.k3s) > 0 ? aws_eip.k3s[0].public_ip : aws_instance.k3s.public_ip
+  public_ip = length(aws_eip.k3s) > 0 ? aws_eip.k3s[0].public_ip : aws_instance.k3s.public_ip
 }
 
 output "public_ip" {

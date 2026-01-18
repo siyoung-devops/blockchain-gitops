@@ -7,8 +7,9 @@ __pycache__/
 .venv/
 env/
 
-# Test
+
 .pytest_cache/
+.terraform/
 
 # IDE
 .vscode/
@@ -19,3 +20,7 @@ env/
 
 # Logs
 *.log
+*.hcl
+
+infra/terraform-k3s/terraform.tfstate
+infra/terraform-k3s/terraform.tfstate.backup
